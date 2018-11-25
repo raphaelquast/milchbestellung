@@ -723,8 +723,6 @@ class gui(milchliste):
 
             #vorratprod_bestellungen = [self.milchlisten_dict['sumorders'].loc[i].values.flatten()[0] for i in self.milchlisten_dict['vorrats_index']]
 
-            print('vorratprod_bestellungen', vorratprod_bestellungen)
-
             for i, [mind, best] in enumerate(zip(mind_bestellmengen, vorratprod_bestellungen)):
                 mind_best_vars[i].set(mind)
             # bestellte menge setzen
