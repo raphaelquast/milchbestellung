@@ -737,9 +737,9 @@ class gui(milchliste):
 
             for i, [mind, best] in enumerate(zip(mind_bestellmengen, vorratprod_bestellungen)):
                 mind_best_vars[i].set(mind)
-            # bestellte menge setzen
+                # bestellte menge setzen
                 best_vars[i].set(best)
-            # bestellmenge - mindestbestellmenge in das entry-feld schreiben
+                # bestellmenge - mindestbestellmenge in das entry-feld schreiben
                 if float(best) == 0.:
                     vorrat_vars[i].set(0.)
                 elif float(best) > float(mind):
@@ -747,7 +747,7 @@ class gui(milchliste):
                 elif float(best) <= float(mind):
                     vorrat_vars[i].set(str(np.round(float(mind) - float(best), 2)))
 
-            # totale bestellung setzen
+                # totale bestellung setzen
                 tot_best_vars[i].set(str(np.round(float(vorrat_vars[i].get()) + float(best), 2)))
 
             # TODO
