@@ -9,7 +9,7 @@ import os
 
 import copy
 
-class milchliste():
+class milchliste(object):
     def __init__(self):
         # spalten-nummer ab welcher die namen eingegeben werden (zähler startet bei 0!)
         self.names_start = 12
