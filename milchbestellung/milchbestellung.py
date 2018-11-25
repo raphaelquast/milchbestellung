@@ -18,11 +18,15 @@ class milchliste(object):
 
         # liste von namen für die vorrat berechnet werden soll
         self._set_vorratsliste(['Cheese of the Week',
-                             'Bergkäse 9',
-                             'Bergkäse 3',
-                             'Käsereibutter Block'])
+                                'Bergkäse 9',
+                                'Bergkäse 3',
+                                'Käsereibutter Block'])
 
-        self._set_additional_vorrat_products([])
+        # article numbers of additional products
+
+        #self._set_additional_vorrat_products([])
+
+        self.additional_vorrat_indexes = []
 
         # a dict containing required return-values from the gui
         self.returned_values = {}
@@ -51,9 +55,8 @@ class milchliste(object):
         vorratsliste = list(OrderedDict.fromkeys(self.vorratsliste +
                                 additional_vorrat_products))
 
-
-        self.__additional_vorrat_products = additional_vorrat_products
         self.__vorratsliste = vorratsliste
+        self.__additional_vorrat_products = additional_vorrat_products
 
     def _get_additional_vorrat_products(self):
         return self.__additional_vorrat_products
@@ -227,6 +230,12 @@ class milchliste(object):
         fulllist = pd.read_csv(os.path.join(currpath, csvfilename),
                                header=1, skiprows=3, decimal=b',')
 
+        # TODO
+        # #replace additional products article-numbers with names
+        # for i, prod in enumerate(self.vorratsliste):
+        #     if prod in self.additional_vorrat_products:
+        #         self.vorratsliste[i] = fulllist['Produkt'][fulllist['Art. Nr.:']==prod].values[0]
+
         # namen der besteller
         names_all = []
         for i in fulllist.keys()[self.names_start:]:
@@ -243,11 +252,8 @@ class milchliste(object):
         # alle produkte in der vorratliste bleiben erhalten!
         #entries_nan = ~np.array(list(map(np.all, fulllist[names_all].isnull().values)))
         entries = ~np.array(list(map(np.all, (fulllist[names_all].isnull() | (fulllist[names_all] == 0)).values)))   #
-        print(np.count_nonzero(entries))
-        entries = np.logical_or(entries, fulllist['Produkt'].isin(self.additional_vorrat_products).values)
-        print(np.count_nonzero(entries))
+        entries = np.logical_or(entries, fulllist['Art. Nr.:'].isin(self.additional_vorrat_indexes).values)
 
-        print(fulllist['Produkt'][entries])
 
         # falls jemand einen namen eingetragen hat, aber nichts bestellt hat,
         # -> namen von liste entfernen
@@ -273,6 +279,9 @@ class milchliste(object):
         # Art. Nr. für vorratsprodukte
         vorrats_index = [fulllist['Art. Nr.:'].loc[fulllist['Produkt'].apply(lambda x: str(x).find(vorratsname) !=-1)].get_values()[0] for vorratsname in self.vorratsliste]
 
+        # TODO
+        vorrats_index += self.additional_vorrat_indexes
+
         # bestellmengen für vorratsliste (cotw menge wird vom spreadsheet genommen)
         vorratsmenge = [float(fulllist['Menge'].loc[fulllist['Art. Nr.:'] == vorrats_index[0]]),
                         1.,
@@ -280,8 +289,8 @@ class milchliste(object):
                         1.5
                         ]
 
-        if len(self.additional_vorrat_products) > 0:
-            vorratsmenge += [1.] * len(self.additional_vorrat_products)
+        if len(self.additional_vorrat_indexes) > 0:
+            vorratsmenge += [1.] * len(self.additional_vorrat_indexes)
 
 
         # vorrats artikel-nummern mit führenden 0 formatieren
@@ -326,12 +335,12 @@ class milchliste(object):
         for i in milchlisten_dict['vorrats_index']:
             if i in milchlisten_dict['orders'].index:
                 curr_order = milchlisten_dict['sumorders'].loc[i].values[0]
-                print(milchlisten_dict['orders']['Produkt'].loc[i] + '  ((mindest-)Bestellmenge: ' + str(milchlisten_dict['vorrats_bestellmengen'][i]) + ')')
-                print('Aktuelle Bestellung:   ', curr_order)
                 while True:
-                    if dict(zip(milchlisten_dict['vorrats_index'], self.vorratsliste))[i] in returned_values:
-                        x = float(returned_values[dict(zip(milchlisten_dict['vorrats_index'], self.vorratsliste))[i]])
+                    if dict(zip(milchlisten_dict['vorrats_index'], self.vorratsliste + self.additional_vorrat_indexes))[i] in returned_values:
+                        x = float(returned_values[dict(zip(milchlisten_dict['vorrats_index'], self.vorratsliste + self.additional_vorrat_indexes))[i]])
                     else:
+                        print(milchlisten_dict['orders']['Produkt'].loc[i] + '  ((mindest-)Bestellmenge: ' + str(milchlisten_dict['vorrats_bestellmengen'][i]) + ')')
+                        print('Aktuelle Bestellung:   ', curr_order)
                         x = float(input('Vorrat = '))
 
                     #if not ((x + curr_order) / vorrats_bestellmengen[i]).is_integer():
@@ -350,7 +359,7 @@ class milchliste(object):
                 print('Aktuelle Bestellung:   NIX')
                 while True:
                     #x = float(input('Vorrat = '))
-                    x = float(returned_values[dict(zip(milchlisten_dict['vorrats_index'], self.vorratsliste))[i]])
+                    x = float(returned_values[dict(zip(milchlisten_dict['vorrats_index'], self.vorratsliste + self.additional_vorrat_indexes))[i]])
 
                     #if not ((x) / vorrats_bestellmengen[i]).is_integer():
                     if not np.round((x) / milchlisten_dict['vorrats_bestellmengen'][i], 3).is_integer():
@@ -396,12 +405,12 @@ class milchliste(object):
             berg_9_4kg_nettopreis = 14.06
 
             # separate bergkäsebestellung in 4kg und 1kg stücke
-            if bestellliste.get_value(berg_9_artnr, 'Bestellmenge') >= 4:
-                berg_9_4kg = bestellliste.get_value(berg_9_artnr, 'Bestellmenge')//4
-                berg_9_1kg = bestellliste.get_value(berg_9_artnr, 'Bestellmenge')%4
+            if bestellliste.at(berg_9_artnr, 'Bestellmenge') >= 4:
+                berg_9_4kg = bestellliste.at(berg_9_artnr, 'Bestellmenge')//4
+                berg_9_1kg = bestellliste.at(berg_9_artnr, 'Bestellmenge')%4
             else:
                 berg_9_4kg = 0.
-                berg_9_1kg = bestellliste.get_value(berg_9_artnr, 'Bestellmenge')
+                berg_9_1kg = bestellliste.at(berg_9_artnr, 'Bestellmenge')
 
             berg_9_4kg_info = milchlisten_dict['fulllist'][milchlisten_dict['titles'] + ['Art. Nr.:']].loc[milchlisten_dict['fulllist']['Produkt'].apply(lambda x: str(x).find('Bergkäse 9') !=-1)]
             berg_9_4kg_info['Produkt'] = 'Bergkäse 9 Mon. 4kg Stück'
@@ -419,7 +428,7 @@ class milchliste(object):
 
             # artikelnummer von bergkäse 9 monate korrigieren
             try:
-                berg_9_vorrat = vorrat.get_value(berg_9_artnr, 'Vorrat (in kg)')
+                berg_9_vorrat = vorrat.at(berg_9_artnr, 'Vorrat (in kg)')
                 vorrat = vorrat.drop(berg_9_artnr)
 
                 berg_9_bestellung = milchlisten_dict['sumorders'].loc[berg_9_artnr]
@@ -465,12 +474,12 @@ class milchliste(object):
             berg_3_4kg_nettopreis = 11.81
 
             # separate bergkäsebestellung in 4kg und 1kg stücke
-            if bestellliste.get_value(berg_3_artnr, 'Bestellmenge') >= 4:
-                berg_3_4kg = bestellliste.get_value(berg_3_artnr, 'Bestellmenge')//4
-                berg_3_1kg = bestellliste.get_value(berg_3_artnr, 'Bestellmenge')%4
+            if bestellliste.at(berg_3_artnr, 'Bestellmenge') >= 4:
+                berg_3_4kg = bestellliste.at(berg_3_artnr, 'Bestellmenge')//4
+                berg_3_1kg = bestellliste.at(berg_3_artnr, 'Bestellmenge')%4
             else:
                 berg_3_4kg = 0.
-                berg_3_1kg = bestellliste.get_value(berg_3_artnr, 'Bestellmenge')
+                berg_3_1kg = bestellliste.at(berg_3_artnr, 'Bestellmenge')
 
             berg_3_4kg_info = milchlisten_dict['fulllist'][milchlisten_dict['titles'] + ['Art. Nr.:']].loc[milchlisten_dict['fulllist']['Produkt'].apply(lambda x: str(x).find('Bergkäse 3') !=-1)]
             berg_3_4kg_info['Produkt'] = 'Bergkäse 3 Mon. 4kg Stück'
@@ -488,7 +497,7 @@ class milchliste(object):
 
             # artikelnummer für bergkäse 3 monate korrigieren
             try:
-                berg_3_vorrat = vorrat.get_value(berg_3_artnr, 'Vorrat (in kg)')
+                berg_3_vorrat = vorrat.at(berg_3_artnr, 'Vorrat (in kg)')
                 vorrat = vorrat.drop(berg_3_artnr)
 
                 berg_3_bestellung = milchlisten_dict['sumorders'].loc[berg_3_artnr]
@@ -568,11 +577,10 @@ class milchliste(object):
         checklisttitles.pop('Produzent')
         checklisttitles.pop('Netto')
         checklisttitles.pop('Einheit')
-        checklisttitles.rename_axis({'Brutto' : 'Preis'}, axis='columns', inplace=True)
-        print(checklisttitles)
+        checklisttitles.rename({'Brutto' : 'Preis'}, axis='columns', inplace=True)
 
         checkliste = pd.concat([checklisttitles, milchlisten_dict['sumorders'],
-                                vorrat, bestellliste], axis=1)
+                                vorrat, bestellliste], axis=1, sort=True)
         checkliste.index.name = 'Art. Nr.:'
 
 
@@ -621,7 +629,8 @@ class gui(milchliste):
         # reset returned values
         self.returned_values = {}
 
-        self._set_additional_vorrat_products(additional_vorrat_products)
+        #self._set_additional_vorrat_products(additional_vorrat_products)
+        self.additional_vorrat_indexes = additional_vorrat_products
 
         def open_file_dialog():
             self.returned_values['foldername'] = filedialog.askdirectory()
@@ -629,7 +638,7 @@ class gui(milchliste):
 
         def generate_files():
             if 'foldername' in self.returned_values:
-                _ = getresult(['KW'] + self.vorratsliste,
+                _ = getresult(['KW'] + self.vorratsliste + self.additional_vorrat_indexes,
                               [KW_var] + vorrat_vars)
 
                 self.milchlisten_erzeugen()
@@ -674,20 +683,25 @@ class gui(milchliste):
         tk.Label(frame, text = 'Bestellt').grid(row=1, column=3)
         tk.Label(frame, text = 'Total').grid(row=1, column=4)
 
+        nvorrat = len(self.vorratsliste + self.additional_vorrat_indexes)
 
-        vorrat_vars = [tk.StringVar(value='0') for i in self.vorratsliste]
-        best_vars = [tk.StringVar(value='--') for i in self.vorratsliste]
-        mind_best_vars = [tk.StringVar(value='--') for i in self.vorratsliste]
-        tot_best_vars = [tk.StringVar(value='--') for i in self.vorratsliste]
+        vorrat_vars = [tk.StringVar(value='0') for i in range(nvorrat)]
+        best_vars = [tk.StringVar(value='--') for i in range(nvorrat)]
+        mind_best_vars = [tk.StringVar(value='--') for i in range(nvorrat)]
+        tot_best_vars = [tk.StringVar(value='--') for i in range(nvorrat)]
+
+        vorrat_labels = [tk.StringVar(value=name) for name in self.vorratsliste + self.additional_vorrat_indexes]
+
         vorrat_entrys = []
-        for i, [name, vorrat_var, best_var, mind_best_var, tot_best_var] in enumerate(zip(self.vorratsliste,
+        for i, [name, vorrat_var, best_var, mind_best_var, tot_best_var, vorrat_label] in enumerate(zip(self.vorratsliste + self.additional_vorrat_indexes,
                                                     vorrat_vars,
                                                     best_vars,
                                                     mind_best_vars,
-                                                    tot_best_vars)):
+                                                    tot_best_vars,
+                                                    vorrat_labels)):
 
             # add a name to each row
-            tk.Label(frame, text=name + '   ').grid(row=i + 2, column=0, sticky=tk.W)
+            tk.Label(frame, textvariable=vorrat_label).grid(row=i + 2, column=0, sticky=tk.W)
 
             # add an entry-cell to each row
             entry = tk.Entry(frame, textvariable = vorrat_var)
@@ -703,8 +717,6 @@ class gui(milchliste):
             # add total bestellmenge to each row
             tk.Label(frame, textvariable = tot_best_var
                      ).grid(row=i + 2, column=4, sticky=tk.E)
-
-
 
         frame.pack()
 
@@ -728,9 +740,20 @@ class gui(milchliste):
             # bestellte menge setzen
                 best_vars[i].set(best)
             # bestellmenge - mindestbestellmenge in das entry-feld schreiben
-                vorrat_vars[i].set(str(np.round(float(mind) - float(best), 2)))
+                if float(best) == 0.:
+                    vorrat_vars[i].set(0.)
+                elif float(best) > float(mind):
+                    vorrat_vars[i].set(str(float(mind)*np.ceil(float(best)/float(mind)) - float(best)))
+                elif float(best) <= float(mind):
+                    vorrat_vars[i].set(str(np.round(float(mind) - float(best), 2)))
+
             # totale bestellung setzen
                 tot_best_vars[i].set(str(np.round(float(vorrat_vars[i].get()) + float(best), 2)))
+
+            # TODO
+            for vorrat_label, add_vorrat_prod in zip(vorrat_labels, self.vorratsliste + self.additional_vorrat_indexes):
+                if add_vorrat_prod in self.additional_vorrat_indexes:
+                    vorrat_label.set(self.milchlisten_dict['fulllist']['Produkt'][self.milchlisten_dict['fulllist']['Art. Nr.:']==add_vorrat_prod].values[0])
 
 
         def add_vorrat(event):
@@ -765,5 +788,6 @@ class gui(milchliste):
 if __name__ is '__main__':
     #asdf = milchliste()
     asdf = gui()
-    asdf.gui(['Topfenauftstrich Sonnenblumenk.', 'asdf'])
+    #asdf.gui(['Trinkmolke'])
+    asdf.gui(['302714', '110028', '120034'])
     #print(asdf)
