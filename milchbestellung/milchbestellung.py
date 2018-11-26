@@ -768,9 +768,9 @@ class gui(milchliste):
                 for i, val in enumerate([self.milchlisten_dict['sumorders'].loc[i].values.flatten()[0] for i in self.milchlisten_dict['vorrats_index']]):
                     tot_best_vars[i].set(str(np.round(float(val) + float(vorrat_vars[i].get()), 2)))
                     if np.round(float(val) + float(vorrat_vars[i].get()), 2) % mind_bestellmengen[i] == 0:
-                        tot_best_menge_labels[i].config(bg="green")
-                    else:
                         tot_best_menge_labels[i].config(bg="red")
+                    else:
+                        tot_best_menge_labels[i].config(bg="green")
 
 
         for i in vorrat_entrys:
@@ -790,6 +790,9 @@ class gui(milchliste):
                 for i, val in enumerate([self.milchlisten_dict['sumorders'].loc[i].values.flatten()[0] for i in self.milchlisten_dict['vorrats_index']]):
                     if np.round(float(val) + float(vorrat_vars[i].get()), 2) % mind_bestellmengen[i] != 0:
                         bestellmengen_OK = False
+                        tot_best_menge_labels[i].config(bg="green")
+                    else:
+                        tot_best_menge_labels[i].config(bg="red")
 
                 if bestellmengen_OK is False:
                     warn_variable.set('Bestellmengen passen nicht zu Mindestbestellmengen!')
