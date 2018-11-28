@@ -696,6 +696,10 @@ class gui(milchliste):
                 self.warn_variable.set('Ordner nicht ausgewählt... Da war ein Fehler.')
                 self.warn_label.config(bg='red')
                 return
+            else:
+                self.warn_variable.set('Ordner ausgewählt!')
+                self.warn_label.config(bg='green')
+
             # mindestbestellmengen setzen
             mind_bestellmengen=[self.milchlisten_dict['vorrats_bestellmengen'][i] for i in self.milchlisten_dict['vorrats_index']]
 
