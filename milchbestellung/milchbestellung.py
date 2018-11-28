@@ -196,7 +196,8 @@ class milchliste(object):
         # csv-datei als pandas-dataframe einlesen (als strings!)
         fulllist = pd.read_csv(os.path.join(currpath, csvfilename),
                                header=1, skiprows=3, decimal=b',', dtype=str)
-
+        # format article numbers to 6 digits
+        fulllist['Art. Nr.:'] = fulllist['Art. Nr.:'].str.zfill(6)
         # namen der besteller
         names_all = []
         for i in fulllist.keys()[self.names_start:]:
