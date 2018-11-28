@@ -9,8 +9,6 @@ import os
 
 import copy
 
-# link to get file:
-# https://docs.google.com/spreadsheets/d/1GXF9jgnnZ2YkY3InACf2qt1Q-L4nlMUy3ZrXndLhd2Q/gviz/tq?tqx=out:csv&sheet=Bestellfile
 
 class milchliste(object):
     def __init__(self):
