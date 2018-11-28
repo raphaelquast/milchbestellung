@@ -775,7 +775,7 @@ class gui(milchliste):
 
             #add_vorrat_Qs = self.milchlisten_dict['fulllist']['Art. Nr.:']==add_vorrat_index
 
-            zfilled_Art_Nrs = np.array([str(i).zfill(6) for i in asdf.milchlisten_dict['fulllist']['Art. Nr.:'].values.flatten()])
+            zfilled_Art_Nrs = np.array([str(i).zfill(6) for i in self.milchlisten_dict['fulllist']['Art. Nr.:'].values.flatten()])
             add_vorrat_Qs = zfilled_Art_Nrs == add_vorrat_index
 
             if np.count_nonzero(add_vorrat_Qs) == 0:
