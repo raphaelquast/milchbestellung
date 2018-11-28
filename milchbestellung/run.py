@@ -1,12 +1,6 @@
-from milchbestellung import gui
-import sys
+from .milchbestellung import gui
 
-def run(arg):
-    # initialize class object
-    asdf = gui()
-    # call gui
-    asdf.gui(arg)
-
-
-if __name__ == '__main__':
-    run(sys.argv[1:])
+# setup gui object
+milchbestellung_gui = gui()
+#run gui
+milchbestellung_gui.gui()

@@ -2,12 +2,13 @@ import tkinter as tk
 from tkinter import filedialog
 from collections import OrderedDict
 
-import numpy as np
-import pandas as pd
 import subprocess
 import os
-
+import sys
 import copy
+
+import numpy as np
+import pandas as pd
 
 
 class milchliste(object):
@@ -18,54 +19,19 @@ class milchliste(object):
         self.max_names = 8
 
         # liste von namen für die vorrat berechnet werden soll
-        self._set_vorratsliste(['Cheese of the Week',
-                                'Bergkäse 9',
-                                'Bergkäse 3',
-                                'Käsereibutter Block'])
+        self.vorratsliste = ['Cheese of the Week',
+                            'Bergkäse 9',
+                            'Bergkäse 3',
+                            'Käsereibutter Block']
+
 
         # article numbers of additional products
-
-        #self._set_additional_vorrat_products([])
-
         self.additional_vorrat_indexes = []
 
         # a dict containing required return-values from the gui
         self.returned_values = {}
 
         self.milchlisten_dict = {}
-
-
-
-    def _set_vorratsliste(self, vorratsliste):
-        # if additional products have been set, add them to vorratsliste
-        additional_products = getattr(self, 'additional_vorrat_products', [])
-
-        # add additional products
-        vorratsliste = vorratsliste + additional_products
-        # remove duplicates (and keep order)
-        vorratsliste = list(OrderedDict.fromkeys(vorratsliste))
-        self.__vorratsliste = vorratsliste
-
-    def _get_vorratsliste(self):
-        return self.__vorratsliste
-
-    vorratsliste = property(_get_vorratsliste, _set_vorratsliste)
-
-    def _set_additional_vorrat_products(self, additional_vorrat_products):
-        # add additional products and remove duplicates (while keeping order!!)
-        vorratsliste = list(OrderedDict.fromkeys(self.vorratsliste +
-                                additional_vorrat_products))
-
-        self.__vorratsliste = vorratsliste
-        self.__additional_vorrat_products = additional_vorrat_products
-
-    def _get_additional_vorrat_products(self):
-        return self.__additional_vorrat_products
-
-    additional_vorrat_products = property(_get_additional_vorrat_products,
-                                          _set_additional_vorrat_products)
-
-
 
 
     def makelatexfile(self, content, filename = 'test',
@@ -227,15 +193,9 @@ class milchliste(object):
                 csvnum += 1
                 assert csvnum <=1, 'There is more than one csv-file in the folder'
 
-        # csv-datei als pandas-dataframe einlesen
+        # csv-datei als pandas-dataframe einlesen (als strings!)
         fulllist = pd.read_csv(os.path.join(currpath, csvfilename),
-                               header=1, skiprows=3, decimal=b',')
-
-        # TODO
-        # #replace additional products article-numbers with names
-        # for i, prod in enumerate(self.vorratsliste):
-        #     if prod in self.additional_vorrat_products:
-        #         self.vorratsliste[i] = fulllist['Produkt'][fulllist['Art. Nr.:']==prod].values[0]
+                               header=1, skiprows=3, decimal=b',', dtype=str)
 
         # namen der besteller
         names_all = []
@@ -248,6 +208,21 @@ class milchliste(object):
         for i in fulllist.keys()[:self.names_start]:
             if 'Unnamed' not in i:
                 titles += [i]
+
+        # set all names columns to float (replacing , with .)
+        # display a warning and stop if something goes wrong
+        for key in names_all:
+            try:
+                fulllist[key] = fulllist[key].replace({',': '.'}, regex=True).apply(pd.to_numeric)
+            except Exception:
+                ex_type, ex_value, ex_traceback = sys.exc_info()
+                from tkinter import messagebox
+                errormessage = 'Es gibt ein Problemchen mit den Einträgen von ' + key + ': \n\n' \
+                               + str(ex_value)
+                messagebox.showerror("Upsi",
+                                    errormessage)
+                return False
+
 
         # boolean array um alle zeilen die keine bestellungen (oder 0 werte) enthalten zu entfernen
         # alle produkte in der vorratliste bleiben erhalten!
@@ -307,7 +282,7 @@ class milchliste(object):
                                  'vorrats_index' : vorrats_index,
                                  'vorrats_bestellmengen' : vorrats_bestellmengen}
 
-        return fulllist, titles, names, orders, sumorders, vorrats_index, vorrats_bestellmengen
+        return True#fulllist, titles, names, orders, sumorders, vorrats_index, vorrats_bestellmengen
 
 
     def milchlisten_erzeugen(self):
@@ -601,6 +576,7 @@ class gui(milchliste):
 
         # initialize main window
         self.root = tk.Tk()
+        self.root.title("Milchlistonator 2000")
 
         # initialize main frame
         self.main_frame = tk.Frame(self.root)
@@ -627,12 +603,11 @@ class gui(milchliste):
         self.add_vorrat_tot_vars = []
 
 
-    def gui(self, additional_vorrat_products=[]):
+    def gui(self):
         # reset returned values
         self.returned_values = {}
 
-        #self._set_additional_vorrat_products(additional_vorrat_products)
-        self.additional_vorrat_indexes = additional_vorrat_products
+        self.additional_vorrat_indexes = []
 
         def open_file_dialog():
             self.returned_values['foldername'] = filedialog.askdirectory()
@@ -716,7 +691,11 @@ class gui(milchliste):
 
 
         def read_callback():
-            _ = self.read_list()
+            read_Q = self.read_list()
+            if read_Q is False:
+                self.warn_variable.set('Ordner nicht ausgewählt... Da war ein Fehler.')
+                self.warn_label.config(bg='red')
+                return
             # mindestbestellmengen setzen
             mind_bestellmengen=[self.milchlisten_dict['vorrats_bestellmengen'][i] for i in self.milchlisten_dict['vorrats_index']]
 
@@ -875,8 +854,14 @@ class gui(milchliste):
         # remove text on click
         def rem_text(event):
             add_vorrat_set_entry.delete(0, tk.END)
+        def add_text(event):
+            add_vorrat_set_entry.delete(0, tk.END)
+            add_vorrat_set_entry.insert(0, 'Art. Nr.')
+
         add_vorrat_set_entry.bind("<Button-1>", rem_text)
         add_vorrat_set_entry.bind("<Return>", lambda event: add_field())
+        add_vorrat_set_entry.bind('<FocusOut>', add_text)
+
 
         tk.Button(self.main_frame, #add_vorrat_set_frame,
                   text='Vorrat-Produkt hinzufügen',
@@ -937,10 +922,3 @@ class gui(milchliste):
 
         return self.returned_values
 
-
-if __name__ is '__main__':
-    #asdf = milchliste()
-    asdf = gui()
-    asdf.gui()
-    #asdf.gui(['302714', '110028', '120034'])
-    #print(asdf)
