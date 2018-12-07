@@ -20,9 +20,9 @@ class milchliste(object):
 
         # liste von namen für die vorrat berechnet werden soll
         self.vorratsliste = ['Cheese of the Week',
-                            'Bergkäse 9',
-                            'Bergkäse 3',
-                            'Käsereibutter Block']
+                             'Bergkäse 9',
+                             'Bergkäse 3',
+                             'Käsereibutter Block']
 
 
         # article numbers of additional products
@@ -31,6 +31,7 @@ class milchliste(object):
         # a dict containing required return-values from the gui
         self.returned_values = {}
 
+        # a dict containing the entries of the milchliste
         self.milchlisten_dict = {}
 
 
@@ -55,7 +56,7 @@ class milchliste(object):
                 (in case more than 1 list is generated)
         '''
 
-
+        # define templates for the latex-files
         if template == 'milchliste':
             latex_template = r'''
             \documentclass[11pt, a4]{article}
@@ -79,7 +80,6 @@ class milchliste(object):
             '''.lstrip()
 
             column_format = '|' + 'r|p{5cm}|' +  'r|' * (len(content.keys())-1)
-
         elif template == 'checkliste':
             latex_template = r'''
             \documentclass[11pt, a4]{article}
@@ -104,7 +104,6 @@ class milchliste(object):
 
             column_format = '|' + 'r|p{5cm}|' + 'r|'*3 + \
                             'p{2.3cm}|' + 'p{1.3cm}|' + 'l|'
-
         elif template == 'bestellliste':
             latex_template = r'''
             \documentclass[11pt, a4]{article}
@@ -129,45 +128,42 @@ class milchliste(object):
 
             column_format = '|' + 'r|' * 2
 
+        # convert pandas DataFrame to latex
         table = content.to_latex(na_rep='',
                                 bold_rows=False,
                                 index=True,
                                 column_format = column_format)
 
-        # tabelle in latex-template einfügen
+        # insert table in latex_template
         latexfile = latex_template.replace('$content', table)
 
-        # komische latex-symbole (wegen newline in cotw) entfernen
+        # replace strange latex-symbols (occuring due to newline-characters)
         latexfile = latexfile.replace('\\textbackslashr', '')
         latexfile = latexfile.replace('\\textbackslashn', '')
 
-        # namen um 90 grad drehen zum platzsparen
+        # rotate names by 90 degrees
         for i in self.milchlisten_dict['names']:
             latexfile = latexfile.replace(i, '\\rotatebox{90}{' + i + '}')
 
-        # umlaute für latex aufbereiten
+        # umlaute to latex-code
         latexfile = latexfile.replace('ö', '\"o')
         latexfile = latexfile.replace('ä', '\"a')
         latexfile = latexfile.replace('ü', '\"u')
 
-        #  euro symbol für latex aufbereiten
+        #  convert euro symbol to latex
         latexfile = latexfile.replace('€', '\euro')
 
-        try:
-            os.remove(os.path.join(self.returned_values['foldername'], "test.tex"))
-        except OSError:
-            pass
-
+        # write new latex-file
         with open(os.path.join(self.returned_values['foldername'], filename) + '.tex', "x", encoding='utf-8') as text_file:
             text_file.write(latexfile)
 
-        #subprocess.call('pdflatex ' + os.path.join(*self.returned_values['foldername'].split('/'), filename) + '.tex', shell=True)
-
+        # call pdflatex to generate pdf's
         subprocess.call(['pdflatex',
                          '-output-directory',
                          self.returned_values['foldername'],
                          os.path.join(self.returned_values['foldername'], filename)])
 
+        # remove latex-files
         try:
             os.remove(os.path.join(self.returned_values['foldername'], filename + '.tex'))
             os.remove(os.path.join(self.returned_values['foldername'], filename + '.aux'))
@@ -198,6 +194,7 @@ class milchliste(object):
                                header=1, skiprows=3, decimal=b',', dtype=str)
         # format article numbers to 6 digits
         fulllist['Art. Nr.:'] = fulllist['Art. Nr.:'].str.zfill(6)
+
         # namen der besteller
         names_all = []
         for i in fulllist.keys()[self.names_start:]:
