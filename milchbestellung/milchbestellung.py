@@ -16,7 +16,7 @@ class milchliste(object):
         # spalten-nummer ab welcher die namen eingegeben werden (zähler startet bei 0!)
         self.names_start = 12
         # maximale anzahl an namen pro milchliste (für aufteilung in n milchlisten)
-        self.max_names = 8
+        self.max_names = 7
 
         # liste von namen für die vorrat berechnet werden soll
         self.vorratsliste = ['Cheese of the Week',
@@ -207,6 +207,7 @@ class milchliste(object):
             if 'Unnamed' not in i:
                 titles += [i]
 
+        
         # set all names columns to float (replacing , with .)
         # display a warning and stop if something goes wrong
         for key in names_all:
@@ -257,7 +258,8 @@ class milchliste(object):
         vorrats_index += self.additional_vorrat_indexes
 
         # bestellmengen für vorratsliste (cotw menge wird vom spreadsheet genommen)
-        vorratsmenge = [float(fulllist['Menge'].loc[fulllist['Art. Nr.:'] == vorrats_index[0]]),
+        cotw_menge = fulllist['Menge'].loc[fulllist['Art. Nr.:'] == vorrats_index[0]].values[0]
+        vorratsmenge = [float(cotw_menge.replace(',','.')),
                         1.,
                         1.,
                         1.5
@@ -379,12 +381,12 @@ class milchliste(object):
             berg_9_4kg_nettopreis = 14.06
 
             # separate bergkäsebestellung in 4kg und 1kg stücke
-            if bestellliste.at(berg_9_artnr, 'Bestellmenge') >= 4:
-                berg_9_4kg = bestellliste.at(berg_9_artnr, 'Bestellmenge')//4
-                berg_9_1kg = bestellliste.at(berg_9_artnr, 'Bestellmenge')%4
+            if bestellliste.loc[berg_9_artnr, 'Bestellmenge'] >= 4:
+                berg_9_4kg = bestellliste.loc[berg_9_artnr, 'Bestellmenge']//4
+                berg_9_1kg = bestellliste.loc[berg_9_artnr, 'Bestellmenge']%4
             else:
                 berg_9_4kg = 0.
-                berg_9_1kg = bestellliste.at(berg_9_artnr, 'Bestellmenge')
+                berg_9_1kg = bestellliste.loc[berg_9_artnr, 'Bestellmenge']
 
             berg_9_4kg_info = milchlisten_dict['fulllist'][milchlisten_dict['titles'] + ['Art. Nr.:']].loc[milchlisten_dict['fulllist']['Produkt'].apply(lambda x: str(x).find('Bergkäse 9') !=-1)]
             berg_9_4kg_info['Produkt'] = 'Bergkäse 9 Mon. 4kg Stück'
@@ -402,7 +404,7 @@ class milchliste(object):
 
             # artikelnummer von bergkäse 9 monate korrigieren
             try:
-                berg_9_vorrat = vorrat.at(berg_9_artnr, 'Vorrat (in kg)')
+                berg_9_vorrat = vorrat.loc[berg_9_artnr, 'Vorrat (in kg)']
                 vorrat = vorrat.drop(berg_9_artnr)
 
                 berg_9_bestellung = milchlisten_dict['sumorders'].loc[berg_9_artnr]
@@ -448,12 +450,12 @@ class milchliste(object):
             berg_3_4kg_nettopreis = 11.81
 
             # separate bergkäsebestellung in 4kg und 1kg stücke
-            if bestellliste.at(berg_3_artnr, 'Bestellmenge') >= 4:
-                berg_3_4kg = bestellliste.at(berg_3_artnr, 'Bestellmenge')//4
-                berg_3_1kg = bestellliste.at(berg_3_artnr, 'Bestellmenge')%4
+            if bestellliste.loc[berg_3_artnr, 'Bestellmenge'] >= 4:
+                berg_3_4kg = bestellliste.loc[berg_3_artnr, 'Bestellmenge']//4
+                berg_3_1kg = bestellliste.loc[berg_3_artnr, 'Bestellmenge']%4
             else:
                 berg_3_4kg = 0.
-                berg_3_1kg = bestellliste.at(berg_3_artnr, 'Bestellmenge')
+                berg_3_1kg = bestellliste.loc[berg_3_artnr, 'Bestellmenge']
 
             berg_3_4kg_info = milchlisten_dict['fulllist'][milchlisten_dict['titles'] + ['Art. Nr.:']].loc[milchlisten_dict['fulllist']['Produkt'].apply(lambda x: str(x).find('Bergkäse 3') !=-1)]
             berg_3_4kg_info['Produkt'] = 'Bergkäse 3 Mon. 4kg Stück'
@@ -471,7 +473,7 @@ class milchliste(object):
 
             # artikelnummer für bergkäse 3 monate korrigieren
             try:
-                berg_3_vorrat = vorrat.at(berg_3_artnr, 'Vorrat (in kg)')
+                berg_3_vorrat = vorrat.loc[berg_3_artnr, 'Vorrat (in kg)']
                 vorrat = vorrat.drop(berg_3_artnr)
 
                 berg_3_bestellung = milchlisten_dict['sumorders'].loc[berg_3_artnr]
