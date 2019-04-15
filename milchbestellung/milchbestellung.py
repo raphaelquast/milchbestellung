@@ -16,7 +16,7 @@ class milchliste(object):
         # spalten-nummer ab welcher die namen eingegeben werden (zähler startet bei 0!)
         self.names_start = 12
         # maximale anzahl an namen pro milchliste (für aufteilung in n milchlisten)
-        self.max_names = 7
+        self.max_names = 8
 
         # liste von namen für die vorrat berechnet werden soll
         self.vorratsliste = ['Cheese of the Week',
@@ -512,7 +512,8 @@ class milchliste(object):
         bestellliste = bestellliste.apply(lambda x: np.round(x, 2))
 
         # produkte die bestellmenge 0 haben exkludieren (kann passieren wenn negativ-vorrat bestellt worden ist)
-        bestellliste = bestellliste.loc[bestellliste['Bestellmenge']!=0]
+        drop_0order_list = bestellliste[bestellliste['Bestellmenge']==0].index
+        bestellliste = bestellliste.drop(drop_0order_list)
 
         #bestellliste_plot = render_mpl_table(bestellliste.fillna(''), font_size=10, col_width=2, title_height=0.02, rotation=0)
         #bestellliste_plot.text(x=0.2, y=0.9, s='Bioparadeis Bestellung KW' + KW, fontsize=16)
@@ -538,6 +539,13 @@ class milchliste(object):
             # zeilen auswählen die bestellungen enthalten
             orders_i = orders_i[entries_i]
 
+            # Brutto-preis entfernen
+            orders_i.drop(columns='Brutto', inplace=True)
+            orders_i.rename(columns={'Netto':'Preis'}, inplace=True)
+
+            # zeilen entfernen die nicht bestellt wurden
+            # (kann passieren wenn negativer vorrat bestellt wurde)
+            orders_i.drop(drop_0order_list, inplace=True, errors='ignore')
 
         #    milchliste_plot = render_mpl_table(orders_i.fillna(''), font_size=10)
         #    milchliste_plot.savefig(os.path.join(currpath,
