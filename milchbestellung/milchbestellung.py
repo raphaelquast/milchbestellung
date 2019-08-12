@@ -540,8 +540,8 @@ class milchliste(object):
             orders_i = orders_i[entries_i]
 
             # Brutto-preis entfernen
-            orders_i.drop(columns='Brutto', inplace=True)
-            orders_i.rename(columns={'Netto':'Preis'}, inplace=True)
+            orders_i.drop(columns='Netto', inplace=True)
+            orders_i.rename(columns={'Brutto':'Preis'}, inplace=True)
 
             # zeilen entfernen die nicht bestellt wurden
             # (kann passieren wenn negativer vorrat bestellt wurde)
